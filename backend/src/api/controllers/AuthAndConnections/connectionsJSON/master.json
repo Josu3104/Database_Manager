@@ -1,0 +1,14 @@
+{
+    "user": "sa",
+    "password": "YourStrong!Passw0rd",
+    "host": "localhost",
+    "server": "sqlserver",
+    "database": "master",
+    "port": 1433,
+    "options": {
+      "encrypt": false,
+      "trustServerCertificate": true
+    },
+    "connectionName": "master"
+  
+}

@@ -1,0 +1,27 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "express-validator": "^7.2.1",
+    "mssql": "^11.0.1",
+    "multer": "^2.0.1",
+    "mysql2": "^3.14.3"
+  },
+  "devDependencies": {
+    "jest": "^30.0.4",
+    "morgan": "^1.10.0",
+    "nodemon": "^3.1.10"
+  }
+}

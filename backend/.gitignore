@@ -1,0 +1,24 @@
+# Node modules
+node_modules/
+# Python virtual environments
+venv/
+.env
+*.env
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+# OS files
+.DS_Store
+Thumbs.db
+# Build output
+dist/
+build/
+# IDE files
+.vscode/
+.idea/
+# Docker
+*.local
+docker-compose.override.yml
