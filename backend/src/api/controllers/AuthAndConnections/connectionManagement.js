@@ -66,26 +66,37 @@ const connectionManager = {
       console.log(`Starting to create login and database for user: ${user}`);
       console.log(`Using master connection:`, masterConn ? 'Available' : 'Not available');
       
+      // Check if the login exists
+      const checkLoginRequest = masterConn.request();
+      const loginCheck = await checkLoginRequest.query(`
+        SELECT name FROM sys.sql_logins WHERE name = '${user}'
+      `);
+      
+      if (loginCheck.recordset.length === 0) {
+        console.log(`Login for user ${user} does not exist. Creating it...`);
+        const createLoginRequest = masterConn.request();
+        await createLoginRequest.query(`
+          CREATE LOGIN [${user}] WITH PASSWORD = '${password}'
+        `);
+        console.log(`Login created for user: ${user}`);
+      } else {
+        console.log(`Login for user ${user} already exists`);
+      }
+      
       // SQL Server needs several steps to create a user and database:
-      // 1. Create login (server level)
+      // 1. Create login (server level) ^Its already done above
       // 2. Create database
       // 3. Create user in database
       // 4. Give user permissions
       const request = masterConn.request();
-      console.log('Executing login and database creation batch...');
+      console.log('Executing database creation...');
       await request.batch(`
-        
-        IF NOT EXISTS (SELECT * FROM sys.sql_logins WHERE name = '${user}')
-        BEGIN
-            CREATE LOGIN [${user}] WITH PASSWORD = '${password}';
-        END;
-
         IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '${database}')
         BEGIN
             CREATE DATABASE [${database}];
         END;
       `);
-      console.log('Login and database creation batch completed successfully');
+      console.log('Database creation completed successfully');
 
       // Create user in the database and give permissions
       const userRequest = masterConn.request();
@@ -93,12 +104,26 @@ const connectionManager = {
 
       await userRequest.batch(`
         USE [${database}];
-        CREATE USER [${user}] FOR LOGIN [${user}];
+        IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = '${user}')
+        BEGIN
+            CREATE USER [${user}] FOR LOGIN [${user}];
+        END;
         ALTER ROLE db_owner ADD MEMBER [${user}];
       `);
 
+     
+      const validationRequest = masterConn.request();
+      const validation = await validationRequest.query(`
+        SELECT 
+          CASE 
+            WHEN EXISTS (SELECT * FROM sys.sql_logins WHERE name = '${user}') AND EXISTS (SELECT * FROM sys.databases WHERE name = '${database}')
+            THEN 'true'
+            ELSE 'false'
+          END 
+          as is_valid
+      `);
       
-      if (validation.recordset.length > 0) {
+      if (validation.recordset.length > 0 && validation.recordset[0].is_valid === 'true') {
         console.log(`Login and DB created/verified for user: ${user}`);
         
         await saveCredentials(credentials);

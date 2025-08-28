@@ -70,9 +70,9 @@ export const saveCredentials = async (credentials) => {
       credentialsToSave.host = 'localhost';
     }
     
-    // Fix the options structure
+    // Hotfix-> SET ENCRYPT TO FALSE SO IT DOESNT WHIMPER WHEN CONNECTING TO AN ALREADY EXISTING DATABASE
     credentialsToSave.options = {
-      encrypt: credentialsToSave.encrypt !== undefined ? credentialsToSave.encrypt : true,
+      encrypt: credentialsToSave.encrypt !== undefined ? credentialsToSave.encrypt : false,
       trustServerCertificate: credentialsToSave.trustServerCertificate !== undefined ? credentialsToSave.trustServerCertificate : true
     };
     
