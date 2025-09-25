@@ -457,4 +457,55 @@ router.post('/migrate', async (req, res) => {
   }
 });
 
+// Get database schema for relational diagram
+router.get('/schema/:connectionName', async (req, res) => {
+  try {
+    const { connectionName } = req.params;
+    
+    const connection = connectionManager.getActiveConnections()
+      .find(conn => conn.connectionName === connectionName);
+      
+    if (!connection) {
+      return res.status(400).json({ error: `Connection ${connectionName} not found` });
+    }
+    
+    const databaseName = connection.database;
+    
+
+    const tablesResult = await connection.pool.request().query(`
+      SELECT 
+        t.name as table_name,
+        c.name as column_name,
+        tp.name as data_type,
+        CASE WHEN pk.column_id IS NOT NULL THEN 1 ELSE 0 END as is_primary_key
+      FROM ${databaseName}.sys.tables t
+      JOIN ${databaseName}.sys.columns c ON t.object_id = c.object_id
+      JOIN ${databaseName}.sys.types tp ON c.user_type_id = tp.user_type_id
+      LEFT JOIN ${databaseName}.sys.index_columns pk ON t.object_id = pk.object_id AND c.column_id = pk.column_id 
+        AND pk.index_id = (SELECT index_id FROM ${databaseName}.sys.indexes WHERE object_id = t.object_id AND is_primary_key = 1)
+      ORDER BY t.name, c.column_id
+    `);
+    
+    // Get foreign keys
+    const fkResult = await connection.pool.request().query(`
+      SELECT 
+        OBJECT_NAME(fkc.parent_object_id) as parent_table,
+        COL_NAME(fkc.parent_object_id, fkc.parent_column_id) as parent_column,
+        OBJECT_NAME(fkc.referenced_object_id) as ref_table,
+        COL_NAME(fkc.referenced_object_id, fkc.referenced_column_id) as ref_column
+      FROM ${databaseName}.sys.foreign_keys fk
+      JOIN ${databaseName}.sys.foreign_key_columns fkc ON fk.object_id = fkc.constraint_object_id
+    `);
+    
+    res.json({
+      tables: tablesResult.recordset,
+      foreignKeys: fkResult.recordset
+    });
+    
+  } catch (error) {
+    console.error('Schema endpoint error:', error.message);
+    res.status(500).json({ error: 'Failed to get schema', details: error.message });
+  }
+});
+
 export default router;

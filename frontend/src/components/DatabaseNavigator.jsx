@@ -45,11 +45,13 @@ import {
   Refresh,
   Delete,
   Inventory,
-  CloudUpload
+  CloudUpload,
+  AccountTree
 } from '@mui/icons-material';
 import axios from 'axios';
 import CreateObjectModal from './CreateObjectModal';
 import MigrationModal from './MigrationModal';
+import RelationalDiagramModal from './RelationalDiagramModal';
 
 const API_URL = 'http://localhost:3100/api/database';
 const DatabaseNavigator = ({ 
@@ -112,6 +114,13 @@ const DatabaseNavigator = ({
 
   // Migration modal
   const [migrationModal, setMigrationModal] = useState({
+    open: false,
+    connectionName: '',
+    databaseName: ''
+  });
+
+  // Relational diagram modal
+  const [diagramModal, setDiagramModal] = useState({
     open: false,
     connectionName: '',
     databaseName: ''
@@ -416,6 +425,24 @@ const DatabaseNavigator = ({
     });
   };
 
+  // Open diagram modal
+  const handleOpenDiagramModal = (connectionName, databaseName) => {
+    setDiagramModal({
+      open: true,
+      connectionName: connectionName,
+      databaseName: databaseName
+    });
+  };
+
+  // Close diagram modal
+  const handleCloseDiagramModal = () => {
+    setDiagramModal({
+      open: false,
+      connectionName: '',
+      databaseName: ''
+    });
+  };
+
   // Create a new database connection
   const handleCreateNewConnection = async () => {
     setCreatingConnection(true);
@@ -617,6 +644,25 @@ const DatabaseNavigator = ({
                            title="Migrate to PostgreSQL"
                          >
                            <CloudUpload fontSize="small" />
+                         </IconButton>
+
+                         {/* Relational diagram icon */}
+                         <IconButton
+                           size="small"
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             handleOpenDiagramModal(connection.name, db.database_name);
+                           }}
+                           sx={{ 
+                             color: '#90caf9',
+                             '&:hover': { 
+                               backgroundColor: 'rgba(144, 202, 249, 0.1)',
+                               color: '#64b5f6'
+                             }
+                           }}
+                           title="View Relational Diagram"
+                         >
+                           <AccountTree fontSize="small" />
                          </IconButton>
                        </Box>
                      }
@@ -1119,6 +1165,14 @@ const DatabaseNavigator = ({
         onClose={handleCloseMigrationModal}
         connectionName={migrationModal.connectionName}
         databaseName={migrationModal.databaseName}
+      />
+
+      {/* Relational diagram modal */}
+      <RelationalDiagramModal
+        open={diagramModal.open}
+        onClose={handleCloseDiagramModal}
+        connectionName={diagramModal.connectionName}
+        databaseName={diagramModal.databaseName}
       />
     </div>
   );

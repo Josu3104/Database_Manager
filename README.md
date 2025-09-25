@@ -7,6 +7,13 @@
 - Puerto de MSSQL: 1433
 - Revisar el compose para mas info acerca de networks y servicios como la db
 - El usuario de la base de datos mssql es 'SA', con rol de System Admin por defecto con la contraseña definida en el compose
+
+### Datos de la parte 2:
+-Se agregaron dos botones para ejecutar una migracion o visualizar el diagrmaa relacional.
+-Con respecto a la migracion, tiene limitaciones, hay casos en que migra parcialmente a postgres, pero se limita y falla por orden de insercion 
+ y detalles de integridad.
+-Puede que el diagrama demore un poco en generarse. Se hizo un intento de optimizar este.
+
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ### Instrucciones de ejecucion:
 - Abrir consola en el directrorio actual, asegurarse de que contenga el docker-compose.yml y pegar el siguiente comando en consola
@@ -25,8 +32,7 @@ esta escrito y documentado en ingles, a excepcion de este documento por fines de
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ### ACLARACIONES:
 - Este proyecto efectua uso de la IA responsablemente, como referencia, parte de esta documentacion, algunos comentarios generales sobre funciones.
-  Adicionalmente, se resalta que el uso de esta fue efectuado principalmente de manera aislada al contenido principal a evaluar del proyecto. (En pocas palabras,
-  el uso responsable de esta para desarrollar componentes visuales)
+  Adicionalmente, se resalta que el uso de esta fue efectuado mayormente con un enfoque al apartado visual. (En pocas palabras, el uso responsable de esta para desarrollar componentes visuales, cosas triviales u optimizacion , como el caso del diagrama que tardaba unos minutos en generarse.)
 - El archivo master.json es necesario para poder conectarse a la base de datos, prevenir borrarlo.
 
 ### LIMITACIONES DE OBJETOS
