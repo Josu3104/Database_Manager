@@ -44,10 +44,12 @@ import {
   Person,
   Refresh,
   Delete,
-  Inventory
+  Inventory,
+  CloudUpload
 } from '@mui/icons-material';
 import axios from 'axios';
 import CreateObjectModal from './CreateObjectModal';
+import MigrationModal from './MigrationModal';
 
 const API_URL = 'http://localhost:3100/api/database';
 const DatabaseNavigator = ({ 
@@ -106,6 +108,13 @@ const DatabaseNavigator = ({
     objectType: 'table',
     schemaName: '',
     connectionName: ''
+  });
+
+  // Migration modal
+  const [migrationModal, setMigrationModal] = useState({
+    open: false,
+    connectionName: '',
+    databaseName: ''
   });
 
   // Load connections when component starts
@@ -389,6 +398,24 @@ const DatabaseNavigator = ({
     setCreateObjectModal(prev => ({ ...prev, open: false }));
   };
 
+  // Open migration modal
+  const handleOpenMigrationModal = (connectionName, databaseName) => {
+    setMigrationModal({
+      open: true,
+      connectionName: connectionName,
+      databaseName: databaseName
+    });
+  };
+
+  // Close migration modal
+  const handleCloseMigrationModal = () => {
+    setMigrationModal({
+      open: false,
+      connectionName: '',
+      databaseName: ''
+    });
+  };
+
   // Create a new database connection
   const handleCreateNewConnection = async () => {
     setCreatingConnection(true);
@@ -564,13 +591,33 @@ const DatabaseNavigator = ({
                      key={db.database_name}
                      itemId={`${connection.name}-${db.database_name}`}
                      label={
-                       <Box className="tree-item">
+                       <Box className="tree-item" sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                          <Storage className="tree-item-icon" />
-                         <Typography className="tree-item-label">
+                         <Typography className="tree-item-label" sx={{ flexGrow: 1 }}>
                            {db.database_name}
                          </Typography>
-                        
+                         
                          {loading && <CircularProgress size={12} sx={{ ml: 1 }} />}
+                         
+                         {/* Migration icon */}
+                         <IconButton
+                           size="small"
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             handleOpenMigrationModal(connection.name, db.database_name);
+                           }}
+                           sx={{ 
+                             ml: 'auto', 
+                             color: '#90caf9',
+                             '&:hover': { 
+                               backgroundColor: 'rgba(144, 202, 249, 0.1)',
+                               color: '#64b5f6'
+                             }
+                           }}
+                           title="Migrate to PostgreSQL"
+                         >
+                           <CloudUpload fontSize="small" />
+                         </IconButton>
                        </Box>
                      }
                    >
@@ -1064,6 +1111,14 @@ const DatabaseNavigator = ({
         objectType={createObjectModal.objectType}
         schemaName={createObjectModal.schemaName}
         connectionName={createObjectModal.connectionName}
+      />
+
+      {/* Migration modal */}
+      <MigrationModal
+        open={migrationModal.open}
+        onClose={handleCloseMigrationModal}
+        connectionName={migrationModal.connectionName}
+        databaseName={migrationModal.databaseName}
       />
     </div>
   );

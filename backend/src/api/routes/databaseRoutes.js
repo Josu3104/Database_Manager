@@ -5,6 +5,7 @@ import DDL from '../controllers/databaseObjects/dbDLL.js';
 import { readCredentials, deleteCredentials } from '../controllers/AuthAndConnections/fileManagement.js';
 import { readdir } from 'fs/promises';
 import { join } from 'path';
+import migrator from '../controllers/migration/migrator.js';
 
 const router = express.Router();
 
@@ -398,6 +399,61 @@ router.delete('/delete-connection', async (req, res) => {
   } catch (error) {
     console.error('Error deleting connection:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Migrator route
+router.post('/migrate', async (req, res) => {
+  try {
+    const { connectionName, pgCredentials } = req.body;
+    
+    const requiredPgFields = ['user', 'host', 'database', 'password'];
+    for (const field of requiredPgFields) {
+      if (!pgCredentials[field]) {
+        return res.status(400).json({ error: `Missing required PostgreSQL field: ${field}` });
+      }
+    }
+    
+    if (!connectionName) {
+      return res.status(400).json({ error: 'Missing required field: connectionName' });
+    }
+    
+    // Get the source MSSQL connection
+    const sourceConnection = connectionManager.getActiveConnections()
+      .find(conn => conn.connectionName === connectionName);
+    
+    if (!sourceConnection) {
+      return res.status(400).json({ error: `Connection ${connectionName} not found or not active` });
+    }
+    
+    
+    const databaseName = sourceConnection.database;
+    // Migrate.
+    const result = await migrator.performMigration(
+      sourceConnection.pool, 
+      databaseName, 
+      pgCredentials
+    );
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: result.message,
+        details: result.details
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: result.message
+      });
+    }
+    
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: `Migration failed: ${error.message}` 
+    });
   }
 });
 

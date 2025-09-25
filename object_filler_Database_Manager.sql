@@ -1,13 +1,26 @@
--
-- Comprehensive SQL Script to Test All Database Objects
--- This script creates various database objects to test the tree view display
+-- Comprehensive SQL Script to Test All Database Objects (NO DBO SCHEMA)
+-- This script creates various database objects without using dbo schema
 
 -- =====================================================
--- 1. TABLES
+-- 1. CREATE SCHEMAS
 -- =====================================================
 
--- Create test tables
-CREATE TABLE dbo.Employees (
+-- Create custom schemas
+CREATE SCHEMA Company;
+GO
+
+CREATE SCHEMA HR;
+GO
+
+CREATE SCHEMA Finance;
+GO
+
+-- =====================================================
+-- 2. TABLES
+-- =====================================================
+
+-- Create test tables in Company schema
+CREATE TABLE Company.Employees (
     EmployeeID INT IDENTITY(1,1) PRIMARY KEY,
     FirstName NVARCHAR(50) NOT NULL,
     LastName NVARCHAR(50) NOT NULL,
@@ -17,14 +30,14 @@ CREATE TABLE dbo.Employees (
     DepartmentID INT
 );
 
-CREATE TABLE dbo.Departments (
+CREATE TABLE Company.Departments (
     DepartmentID INT IDENTITY(1,1) PRIMARY KEY,
     DepartmentName NVARCHAR(100) NOT NULL,
     Location NVARCHAR(100),
     Budget DECIMAL(12,2)
 );
 
-CREATE TABLE dbo.Projects (
+CREATE TABLE Company.Projects (
     ProjectID INT IDENTITY(1,1) PRIMARY KEY,
     ProjectName NVARCHAR(100) NOT NULL,
     StartDate DATE,
@@ -33,10 +46,7 @@ CREATE TABLE dbo.Projects (
     Status NVARCHAR(20) DEFAULT 'Active'
 );
 
--- Create a custom schema and table
-CREATE SCHEMA HR;
-GO
-
+-- Create tables in HR schema
 CREATE TABLE HR.Payroll (
     PayrollID INT IDENTITY(1,1) PRIMARY KEY,
     EmployeeID INT,
@@ -46,12 +56,31 @@ CREATE TABLE HR.Payroll (
     TaxAmount DECIMAL(10,2)
 );
 
+CREATE TABLE HR.Benefits (
+    BenefitID INT IDENTITY(1,1) PRIMARY KEY,
+    EmployeeID INT,
+    BenefitType NVARCHAR(50),
+    BenefitValue DECIMAL(10,2),
+    StartDate DATE,
+    EndDate DATE
+);
+
+-- Create table in Finance schema
+CREATE TABLE Finance.Expenses (
+    ExpenseID INT IDENTITY(1,1) PRIMARY KEY,
+    EmployeeID INT,
+    ExpenseType NVARCHAR(50),
+    Amount DECIMAL(10,2),
+    ExpenseDate DATE,
+    Description NVARCHAR(200)
+);
+
 -- =====================================================
--- 2. VIEWS
+-- 3. VIEWS
 -- =====================================================
 
 -- Create views
-CREATE VIEW dbo.EmployeeDetails AS
+CREATE VIEW Company.EmployeeDetails AS
 SELECT 
     e.EmployeeID,
     e.FirstName + ' ' + e.LastName AS FullName,
@@ -59,19 +88,21 @@ SELECT
     e.HireDate,
     e.Salary,
     d.DepartmentName
-FROM dbo.Employees e
-LEFT JOIN dbo.Departments d ON e.DepartmentID = d.DepartmentID;
+FROM Company.Employees e
+LEFT JOIN Company.Departments d ON e.DepartmentID = d.DepartmentID;
+GO
 
-CREATE VIEW dbo.DepartmentSummary AS
+CREATE VIEW Company.DepartmentSummary AS
 SELECT 
     d.DepartmentID,
     d.DepartmentName,
     COUNT(e.EmployeeID) AS EmployeeCount,
     AVG(e.Salary) AS AvgSalary,
     SUM(e.Salary) AS TotalSalary
-FROM dbo.Departments d
-LEFT JOIN dbo.Employees e ON d.DepartmentID = e.DepartmentID
+FROM Company.Departments d
+LEFT JOIN Company.Employees e ON d.DepartmentID = e.DepartmentID
 GROUP BY d.DepartmentID, d.DepartmentName;
+GO
 
 CREATE VIEW HR.SalaryReport AS
 SELECT 
@@ -82,14 +113,15 @@ SELECT
     p.NetPay,
     p.TaxAmount
 FROM HR.Payroll p
-JOIN dbo.Employees e ON p.EmployeeID = e.EmployeeID;
+JOIN Company.Employees e ON p.EmployeeID = e.EmployeeID;
+GO
 
 -- =====================================================
--- 3. STORED PROCEDURES
+-- 4. STORED PROCEDURES
 -- =====================================================
 
 -- Create stored procedures
-CREATE PROCEDURE dbo.GetEmployeesByDepartment
+CREATE PROCEDURE Company.GetEmployeesByDepartment
     @DepartmentID INT = NULL
 AS
 BEGIN
@@ -103,14 +135,14 @@ BEGIN
         e.HireDate,
         e.Salary,
         d.DepartmentName
-    FROM dbo.Employees e
-    LEFT JOIN dbo.Departments d ON e.DepartmentID = d.DepartmentID
+    FROM Company.Employees e
+    LEFT JOIN Company.Departments d ON e.DepartmentID = d.DepartmentID
     WHERE (@DepartmentID IS NULL OR e.DepartmentID = @DepartmentID)
     ORDER BY e.LastName, e.FirstName;
 END;
 GO
 
-CREATE PROCEDURE dbo.InsertEmployee
+CREATE PROCEDURE Company.InsertEmployee
     @FirstName NVARCHAR(50),
     @LastName NVARCHAR(50),
     @Email NVARCHAR(100),
@@ -120,7 +152,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
     
-    INSERT INTO dbo.Employees (FirstName, LastName, Email, DepartmentID, Salary)
+    INSERT INTO Company.Employees (FirstName, LastName, Email, DepartmentID, Salary)
     VALUES (@FirstName, @LastName, @Email, @DepartmentID, @Salary);
     
     SELECT SCOPE_IDENTITY() AS NewEmployeeID;
@@ -134,7 +166,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
     
-    DECLARE @GrossPay DECIMAL(10,2) = (SELECT Salary FROM dbo.Employees WHERE EmployeeID = @EmployeeID);
+    DECLARE @GrossPay DECIMAL(10,2) = (SELECT Salary FROM Company.Employees WHERE EmployeeID = @EmployeeID);
     DECLARE @TaxRate DECIMAL(5,4) = 0.15;
     DECLARE @TaxAmount DECIMAL(10,2) = @GrossPay * @TaxRate;
     DECLARE @NetPay DECIMAL(10,2) = @GrossPay - @TaxAmount;
@@ -147,11 +179,11 @@ END;
 GO
 
 -- =====================================================
--- 4. FUNCTIONS
+-- 5. FUNCTIONS
 -- =====================================================
 
 -- Create functions
-CREATE FUNCTION dbo.GetEmployeeFullName
+CREATE FUNCTION Company.GetEmployeeFullName
 (
     @EmployeeID INT
 )
@@ -161,14 +193,14 @@ BEGIN
     DECLARE @FullName NVARCHAR(101);
     
     SELECT @FullName = FirstName + ' ' + LastName
-    FROM dbo.Employees
+    FROM Company.Employees
     WHERE EmployeeID = @EmployeeID;
     
     RETURN @FullName;
 END;
 GO
 
-CREATE FUNCTION dbo.CalculateYearsOfService
+CREATE FUNCTION Company.CalculateYearsOfService
 (
     @HireDate DATE
 )
@@ -179,7 +211,7 @@ BEGIN
 END;
 GO
 
-CREATE FUNCTION dbo.GetDepartmentEmployees
+CREATE FUNCTION Company.GetDepartmentEmployees
 (
     @DepartmentID INT
 )
@@ -194,7 +226,7 @@ RETURN
         Email,
         HireDate,
         Salary
-    FROM dbo.Employees
+    FROM Company.Employees
     WHERE DepartmentID = @DepartmentID
 );
 GO
@@ -218,11 +250,11 @@ END;
 GO
 
 -- =====================================================
--- 5. SEQUENCES
+-- 6. SEQUENCES
 -- =====================================================
 
 -- Create sequences
-CREATE SEQUENCE dbo.OrderNumberSequence
+CREATE SEQUENCE Company.OrderNumberSequence
     AS INT
     START WITH 1000
     INCREMENT BY 1
@@ -240,154 +272,119 @@ CREATE SEQUENCE HR.BadgeNumberSequence
 GO
 
 -- =====================================================
--- 6. TRIGGERS
--- =====================================================
-
--- Create triggers
-CREATE TRIGGER dbo.trg_Employees_Update
-ON dbo.Employees
-AFTER UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    IF UPDATE(Salary)
-    BEGIN
-        INSERT INTO dbo.SalaryHistory (EmployeeID, OldSalary, NewSalary, ChangeDate)
-        SELECT 
-            i.EmployeeID,
-            d.Salary,
-            i.Salary,
-            GETDATE()
-        FROM inserted i
-        INNER JOIN deleted d ON i.EmployeeID = d.EmployeeID
-        WHERE i.Salary != d.Salary;
-    END;
-END;
-GO
-
--- Create table for trigger to work
-CREATE TABLE dbo.SalaryHistory (
-    HistoryID INT IDENTITY(1,1) PRIMARY KEY,
-    EmployeeID INT,
-    OldSalary DECIMAL(10,2),
-    NewSalary DECIMAL(10,2),
-    ChangeDate DATETIME
-);
-
-CREATE TRIGGER dbo.trg_Departments_Delete
-ON dbo.Departments
-INSTEAD OF DELETE
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    IF EXISTS (SELECT 1 FROM deleted d INNER JOIN dbo.Employees e ON d.DepartmentID = e.DepartmentID)
-    BEGIN
-        RAISERROR ('Cannot delete department with employees', 16, 1);
-        RETURN;
-    END;
-    
-    DELETE FROM dbo.Departments 
-    WHERE DepartmentID IN (SELECT DepartmentID FROM deleted);
-END;
-GO
-
--- =====================================================
 -- 7. INDEXES
 -- =====================================================
 
 -- Create indexes
 CREATE NONCLUSTERED INDEX IX_Employees_LastName_FirstName
-ON dbo.Employees (LastName, FirstName);
+ON Company.Employees (LastName, FirstName);
 
 CREATE NONCLUSTERED INDEX IX_Employees_Email
-ON dbo.Employees (Email);
+ON Company.Employees (Email);
 
 CREATE NONCLUSTERED INDEX IX_Employees_DepartmentID
-ON dbo.Employees (DepartmentID);
+ON Company.Employees (DepartmentID);
 
 CREATE NONCLUSTERED INDEX IX_Employees_HireDate
-ON dbo.Employees (HireDate);
+ON Company.Employees (HireDate);
 
 CREATE NONCLUSTERED INDEX IX_Payroll_EmployeeID_PayDate
 ON HR.Payroll (EmployeeID, PayDate);
 
 CREATE UNIQUE NONCLUSTERED INDEX IX_Departments_DepartmentName
-ON dbo.Departments (DepartmentName);
+ON Company.Departments (DepartmentName);
 
 -- =====================================================
 -- 8. INSERT SAMPLE DATA
 -- =====================================================
 
 -- Insert sample data
-INSERT INTO dbo.Departments (DepartmentName, Location, Budget) VALUES
+INSERT INTO Company.Departments (DepartmentName, Location, Budget) VALUES
 ('IT', 'Building A', 500000.00),
 ('HR', 'Building B', 300000.00),
 ('Finance', 'Building C', 400000.00),
 ('Marketing', 'Building D', 350000.00);
 
-INSERT INTO dbo.Employees (FirstName, LastName, Email, DepartmentID, Salary) VALUES
+INSERT INTO Company.Employees (FirstName, LastName, Email, DepartmentID, Salary) VALUES
 ('John', 'Doe', 'john.doe@company.com', 1, 75000.00),
 ('Jane', 'Smith', 'jane.smith@company.com', 2, 65000.00),
 ('Bob', 'Johnson', 'bob.johnson@company.com', 1, 80000.00),
 ('Alice', 'Brown', 'alice.brown@company.com', 3, 70000.00),
-('Charlie', 'Wilson', 'charlie.wilson@company.com', 4, 60000.00);
+('Charlie', 'Wilson', 'charlie.wilson@company.com', 4, 60000.00),
+('Diana', 'Davis', 'diana.davis@company.com', 2, 68000.00);
 
-INSERT INTO dbo.Projects (ProjectName, StartDate, EndDate, Budget, Status) VALUES
+INSERT INTO Company.Projects (ProjectName, StartDate, EndDate, Budget, Status) VALUES
 ('Website Redesign', '2024-01-01', '2024-06-30', 100000.00, 'Active'),
 ('Database Migration', '2024-03-01', '2024-08-31', 150000.00, 'Active'),
-('Mobile App Development', '2024-02-01', '2024-12-31', 200000.00, 'Planning');
+('Mobile App Development', '2024-02-01', '2024-12-31', 200000.00, 'Planning'),
+('Cloud Infrastructure', '2024-04-01', '2024-10-31', 180000.00, 'Active');
+
+INSERT INTO HR.Benefits (EmployeeID, BenefitType, BenefitValue, StartDate) VALUES
+(1, 'Health Insurance', 500.00, '2024-01-01'),
+(2, 'Dental Insurance', 150.00, '2024-01-01'),
+(3, 'Vision Insurance', 100.00, '2024-01-01'),
+(4, 'Health Insurance', 500.00, '2024-01-01'),
+(5, 'Health Insurance', 500.00, '2024-01-01');
+
+INSERT INTO Finance.Expenses (EmployeeID, ExpenseType, Amount, ExpenseDate, Description) VALUES
+(1, 'Travel', 1200.00, '2024-01-15', 'Conference attendance'),
+(2, 'Office Supplies', 150.00, '2024-01-20', 'Desk accessories'),
+(3, 'Software License', 299.00, '2024-02-01', 'Development tools'),
+(4, 'Training', 800.00, '2024-02-10', 'Professional certification');
 
 -- =====================================================
 -- 9. TEST THE OBJECTS
 -- =====================================================
 
 -- Test stored procedures
-EXEC dbo.GetEmployeesByDepartment @DepartmentID = 1;
-EXEC dbo.InsertEmployee @FirstName = 'Test', @LastName = 'User', @Email = 'test@company.com', @DepartmentID = 1, @Salary = 55000.00;
+EXEC Company.GetEmployeesByDepartment @DepartmentID = 1;
+EXEC Company.InsertEmployee @FirstName = 'Test', @LastName = 'User', @Email = 'test@company.com', @DepartmentID = 1, @Salary = 55000.00;
 
 -- Test functions
-SELECT dbo.GetEmployeeFullName(1) AS EmployeeName;
-SELECT dbo.CalculateYearsOfService('2020-01-15') AS YearsOfService;
-SELECT * FROM dbo.GetDepartmentEmployees(1);
+SELECT Company.GetEmployeeFullName(1) AS EmployeeName;
+SELECT Company.CalculateYearsOfService('2020-01-15') AS YearsOfService;
+SELECT * FROM Company.GetDepartmentEmployees(1);
 SELECT HR.GetTotalPayroll('2024-01-01', '2024-12-31') AS TotalPayroll;
 
 -- Test sequences
-SELECT NEXT VALUE FOR dbo.OrderNumberSequence AS NextOrderNumber;
+SELECT NEXT VALUE FOR Company.OrderNumberSequence AS NextOrderNumber;
 SELECT NEXT VALUE FOR HR.BadgeNumberSequence AS NextBadgeNumber;
 
 -- Test views
-SELECT * FROM dbo.EmployeeDetails;
-SELECT * FROM dbo.DepartmentSummary;
+SELECT * FROM Company.EmployeeDetails;
+SELECT * FROM Company.DepartmentSummary;
 SELECT * FROM HR.SalaryReport;
 
--- Test triggers by updating salary
-UPDATE dbo.Employees SET Salary = 80000.00 WHERE EmployeeID = 1;
-SELECT * FROM dbo.SalaryHistory;
+-- Add some payroll data to test
+EXEC HR.CalculatePayroll @EmployeeID = 1, @PayDate = '2024-01-31';
+EXEC HR.CalculatePayroll @EmployeeID = 2, @PayDate = '2024-01-31';
+EXEC HR.CalculatePayroll @EmployeeID = 3, @PayDate = '2024-01-31';
 
 -- =====================================================
 -- 10. VERIFICATION QUERIES
 -- =====================================================
 
 -- Verify all objects were created
-SELECT 'Tables' AS ObjectType, COUNT(*) AS Count FROM sys.tables WHERE type = 'U'
+SELECT 'Tables' AS ObjectType, COUNT(*) AS Count FROM sys.tables WHERE type = 'U' AND SCHEMA_NAME(schema_id) != 'dbo'
 UNION ALL
-SELECT 'Views', COUNT(*) FROM sys.views
+SELECT 'Views', COUNT(*) FROM sys.views WHERE SCHEMA_NAME(schema_id) != 'dbo'
 UNION ALL
-SELECT 'Stored Procedures', COUNT(*) FROM sys.procedures
+SELECT 'Stored Procedures', COUNT(*) FROM sys.procedures WHERE SCHEMA_NAME(schema_id) != 'dbo'
 UNION ALL
-SELECT 'Functions', COUNT(*) FROM sys.objects WHERE type IN ('FN','IF','TF','AF','FS','FT')
+SELECT 'Functions', COUNT(*) FROM sys.objects WHERE type IN ('FN','IF','TF','AF','FS','FT') AND SCHEMA_NAME(schema_id) != 'dbo'
 UNION ALL
-SELECT 'Sequences', COUNT(*) FROM sys.sequences
+SELECT 'Sequences', COUNT(*) FROM sys.sequences WHERE SCHEMA_NAME(schema_id) != 'dbo'
 UNION ALL
-SELECT 'Triggers', COUNT(*) FROM sys.triggers
-UNION ALL
-SELECT 'Indexes', COUNT(*) FROM sys.indexes WHERE index_id > 0
-UNION ALL
-SELECT 'Filegroups', COUNT(*) FROM sys.filegroups
-UNION ALL
-SELECT 'Users', COUNT(*) FROM sys.database_principals WHERE type IN ('S','U','G') AND name NOT IN ('dbo','guest','INFORMATION_SCHEMA','sys');
+SELECT 'Schemas', COUNT(*) FROM sys.schemas WHERE name NOT IN ('dbo', 'sys', 'INFORMATION_SCHEMA', 'guest');
 
-PRINT 'Database objects test script completed successfully!';
-PRINT 'All objects should now be visible in the tree view.';
+-- Show schema distribution
+SELECT 
+    SCHEMA_NAME(schema_id) AS SchemaName,
+    COUNT(*) AS TableCount
+FROM sys.tables 
+WHERE type = 'U' AND SCHEMA_NAME(schema_id) != 'dbo'
+GROUP BY SCHEMA_NAME(schema_id)
+ORDER BY SchemaName;
+
+PRINT 'Database objects test script completed successfully (NO DBO)!';
+PRINT 'All objects should now be visible in the tree view without dbo schema.';

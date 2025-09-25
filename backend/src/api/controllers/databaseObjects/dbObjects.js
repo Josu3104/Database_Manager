@@ -28,7 +28,7 @@ const dbObjectsGetters = {
                 .query(`
                     SELECT s.name AS schema_name
                     FROM [${database}].sys.schemas s
-                    WHERE s.name NOT IN ('sys', 'INFORMATION_SCHEMA', 'db_accessadmin', 'db_backupoperator', 'db_datareader', 'db_datawriter', 'db_ddladmin', 'db_denydatareader', 'db_denydatawriter', 'db_owner', 'db_securityadmin', 'guest')
+                    WHERE s.name NOT IN ('sys', 'INFORMATION_SCHEMA', 'db_accessadmin', 'db_backupoperator', 'db_datareader', 'db_datawriter', 'db_ddladmin', 'db_denydatareader', 'db_denydatawriter', 'db_owner', 'db_securityadmin', 'guest', 'dbo')
                     ORDER BY s.name;
                 `);
             console.log('Schemas fetched successfully for DB:', database, result.recordset);
@@ -91,7 +91,7 @@ const dbObjectsGetters = {
             const database = currentConnection.credentials?.database || currentConnection.database;
             const result = await masterConnection.request().query(`
                 SELECT 
-                    s.name AS schema_name,
+                    CASE WHEN s.name = 'dbo' THEN 'default' ELSE s.name END AS schema_name,
                     t.name AS table_name
                 FROM [${database}].sys.tables t
                 JOIN [${database}].sys.schemas s ON t.schema_id = s.schema_id
@@ -129,7 +129,7 @@ const dbObjectsGetters = {
             const database = currentConnection.credentials?.database || currentConnection.database;
             const result = await masterConnection.request().query(`
                 SELECT 
-                    s.name AS schema_name,
+                    CASE WHEN s.name = 'dbo' THEN 'default' ELSE s.name END AS schema_name,
                     v.name AS view_name
                 FROM [${database}].sys.views v
                 JOIN [${database}].sys.schemas s ON v.schema_id = s.schema_id
@@ -165,7 +165,7 @@ const dbObjectsGetters = {
             const database = currentConnection.credentials?.database || currentConnection.database;
             const result = await masterConnection.request().query(`
                 SELECT 
-                    s.name AS schema_name,
+                    CASE WHEN s.name = 'dbo' THEN 'default' ELSE s.name END AS schema_name,
                     p.name AS procedure_name
                 FROM [${database}].sys.procedures p
                 JOIN [${database}].sys.schemas s ON p.schema_id = s.schema_id
@@ -201,7 +201,7 @@ const dbObjectsGetters = {
             const database = currentConnection.credentials?.database || currentConnection.database;
             const result = await masterConnection.request().query(`
                 SELECT 
-                    s.name AS schema_name,
+                    CASE WHEN s.name = 'dbo' THEN 'default' ELSE s.name END AS schema_name,
                     o.name AS function_name
                 FROM [${database}].sys.objects o
                 JOIN [${database}].sys.schemas s ON o.schema_id = s.schema_id
